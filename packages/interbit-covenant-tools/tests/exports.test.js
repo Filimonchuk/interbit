@@ -32,6 +32,7 @@ describe('module exports expected API', () => {
     assert.ok(api.manifestCovenant)
     assert.ok(api.manifestCovenant.actionCreators)
     assert.ok(api.manifestCovenant.actionTypes)
+    assert.ok(api.manifestCovenant.initialState)
     assert.ok(api.manifestCovenant.reducer)
   })
 
@@ -39,11 +40,20 @@ describe('module exports expected API', () => {
     assert.ok(api.rootCovenant)
     assert.ok(api.rootCovenant.actionCreators)
     assert.ok(api.rootCovenant.actionTypes)
+    assert.ok(api.rootCovenant.initialState)
     assert.ok(api.rootCovenant.reducer)
   })
 
   it('rootStateSelectors', () => {
     assert.ok(api.rootStateSelectors)
+  })
+
+  it('cAuthConsumerCovenant', () => {
+    assert.ok(api.cAuthConsumerCovenant)
+    assert.ok(api.cAuthConsumerCovenant.actionCreators)
+    assert.ok(api.cAuthConsumerCovenant.actionTypes)
+    assert.ok(api.cAuthConsumerCovenant.initialState)
+    assert.ok(api.cAuthConsumerCovenant.reducer)
   })
 
   it('mergeCovenants', () => {

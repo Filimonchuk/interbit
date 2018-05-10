@@ -4,11 +4,11 @@ import ReactDOM from 'react-dom'
 import { Provider } from 'react-redux'
 import { createStore, applyMiddleware } from 'redux'
 import { composeWithDevTools } from 'redux-devtools-extension'
-import { middleware as interbitMiddleware } from 'interbit-middleware'
+import { middleware as interbitMiddleware } from 'interbit-ui-tools'
 import { BrowserRouter } from 'react-router-dom'
 
-import 'lib-react-interbit/src/css/index.css'
-import 'lib-react-interbit/src/css/interbit.css'
+import 'interbit-ui-components/src/css/index.css'
+import 'interbit-ui-components/src/css/interbit.css'
 
 import App from './App'
 

@@ -195,3 +195,28 @@ var smartContract = {
 Because a smart contract must be deterministic a method of handling side effects on a blockchain must be used. Interbit uses the redux-saga API to manage side effects. If you require side effect management in your covenant simply export a `rootSaga` in your covenant package export in the same way you would export a redux saga.
 
 Refer to the [redux-saga](https://redux-saga.js.org/docs/introduction/BeginnerTutorial.html) documentation for implementation details.
+
+## Chain Joining
+
+Chains can join to each other via a read or write join. These joins enable Interbit blockchains to share data and interact with each other.
+
+## Read Joins
+
+A read join allows one blockchain to share application state with another. Both blockchains must agree to and authorize the join in order for any data to be shared.
+
+Once authorized on both chains, the providing chain will send verifiable blockheaders and data to the consuming chain which will receive a subset of the providing chain's state. A read join is authorized on the providing chain with an [`'@@interbit/START_PROVIDE_STATE'`](../reference/interbit-covenant-utils/startProvideState.md) action and on the receiving chain by an [`'@@interbit/START_CONSUME_STATE'`](../reference/interbit-covenant-utils/startConsumeState.md). Once both actions have been blocked the state will be shared.
+
+## Write joins
+
+A write join allows one blockchain to remotely dispatch actions to another blockchain. Both blockchains must agree to authorize the join in order for any actions to be sent.
+
+Once both chains have agreed to the join, the remote dispatch is handled using a read join that shares a queue of actions from the sending chain to the receiving chain. The receiving chain will process these actions if the sending chain is authorized to dispatch them.
+
+A write join is authorized on the sending side with an [`'@@interbit/AUTHORIZE_SEND_ACTIONS'`](../reference/interbit-covenant-utils/authorizeSendActions.md) action and on the receiving side with an [`'@@interbit/AUTHORIZE_RECEIVE_ACTIONS'`](../reference/interbit-covenant-utils/authorizeReceiveActions.md) action.
+
+
+## Configuration and Manifest File
+
+Interbit uses a [configuration](../reference/interbit/config.md) file so that you can describe your entire blockchain network in a single place. This file allows you to generate and manage networks based on the constraints described in the configuration.
+
+The [manifest](../reference/interbit/manifest.md) file is generated during the [`interbit build`](../reference/interbit/build.md) step to describe a fully resolved and deployable blockchain network.

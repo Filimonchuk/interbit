@@ -3,8 +3,8 @@ import PropTypes from 'prop-types'
 import queryString from 'query-string'
 import { connect } from 'react-redux'
 import { reduxForm } from 'redux-form'
-import { BlockExplorer } from 'lib-react-interbit'
-import { chainDispatch } from 'interbit-middleware'
+import { BlockExplorer } from 'interbit-ui-components'
+import { chainDispatch } from 'interbit-ui-tools'
 
 import {
   getExploreChainState,

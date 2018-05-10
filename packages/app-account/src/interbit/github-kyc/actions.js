@@ -1,3 +1,5 @@
+const uuid = require('uuid')
+
 const covenantName = 'app-account-github-kyc'
 
 const actionTypes = {
@@ -13,6 +15,8 @@ const actionTypes = {
   REMOVE_PROFILE: `${covenantName}/REMOVE_PROFILE`,
   SIGN_OUT: `${covenantName}/SIGN_OUT`
 }
+
+const generateJoinName = () => `GITHUB-${uuid.v4().toUpperCase()}`
 
 const actionCreators = {
   configureOauthApp: ({
@@ -39,15 +43,18 @@ const actionCreators = {
   oAuthCallback: ({
     requestId,
     consumerChainId,
-    joinName,
-    temporaryToken
+    temporaryToken,
+    error,
+    errorDescription
   }) => ({
     type: actionTypes.OAUTH_CALLBACK,
     payload: {
       requestId,
       consumerChainId,
-      joinName,
-      temporaryToken
+      joinName: generateJoinName(),
+      temporaryToken,
+      error,
+      errorDescription
     }
   }),
 
@@ -55,14 +62,18 @@ const actionCreators = {
     requestId,
     consumerChainId,
     joinName,
-    temporaryToken
+    temporaryToken,
+    error,
+    errorDescription
   }) => ({
     type: actionTypes.OAUTH_CALLBACK_SAGA,
     payload: {
       requestId,
       consumerChainId,
       joinName,
-      temporaryToken
+      temporaryToken,
+      error,
+      errorDescription
     }
   }),
 
@@ -71,9 +82,9 @@ const actionCreators = {
     payload: { requestId, temporaryToken }
   }),
 
-  authSuceeded: ({ requestId }) => ({
+  authSuceeded: ({ requestId, joinName }) => ({
     type: actionTypes.AUTH_SUCEEDED,
-    payload: { requestId }
+    payload: { requestId, joinName }
   }),
 
   authFailed: ({ requestId, consumerChainId, error }) => ({

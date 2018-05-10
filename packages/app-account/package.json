@@ -1,6 +1,6 @@
 {
     "name": "app-account",
-    "version": "0.4.14",
+    "version": "0.4.17",
     "private": true,
     "main": "src/exports.js",
     "license": "MIT",
@@ -8,11 +8,11 @@
     "dependencies": {
         "axios": "^0.18.0",
         "cross-env": "^5.1.4",
-        "interbit-cli": "0.4.14",
-        "interbit-covenant-tools": "0.4.14",
-        "interbit-middleware": "0.4.14",
-        "interbit-platform-tools": "0.4.14",
-        "lib-react-interbit": "0.4.14",
+        "interbit-cli": "0.4.17",
+        "interbit-covenant-tools": "0.4.17",
+        "interbit-platform-tools": "0.4.17",
+        "interbit-ui-components": "0.4.17",
+        "interbit-ui-tools": "0.4.17",
         "query-string": "^5.0.1",
         "react": "^16.2.0",
         "react-bootstrap": "^0.32.1",
@@ -35,13 +35,13 @@
         "redux-saga-test-plan": "^3.6.0"
     },
     "scripts": {
-        "start": "cross-env REACT_APP_INTERBIT_WEB_SERVER=123 REACT_APP_INTERBIT_PORT=5000 react-scripts start",
+        "start": "cross-env REACT_APP_INTERBIT_WEB_SERVER=123 REACT_APP_INTERBIT_PORT=5025 react-scripts start",
         "build": "react-scripts build",
         "serve": "cross-env serve build",
         "test": "react-scripts test --env=jsdom",
         "eject": "react-scripts eject",
-        "interbit:start": "cross-env COVENANT_DEV_MODE=true DB_PATH=./db-interbit interbit start",
-        "interbit:create": "cross-env COVENANT_DEV_MODE=true interbit create",
+        "interbit:start": "interbit start --db-path ./db-interbit --port 5025 --dev --no-watch",
+        "interbit:create": "interbit create --dev",
         "interbit:build": "interbit build",
         "interbit:deploy": "interbit deploy"
     }

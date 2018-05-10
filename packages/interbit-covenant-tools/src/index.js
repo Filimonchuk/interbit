@@ -26,13 +26,17 @@ const {
   rootStateSelectors
 } = require('./rootCovenant')
 
+const cAuthConsumerCovenant = require('./cAuthConsumerCovenant')
+
+const mergeCovenants = require('./mergeCovenants')
+
+const selectors = require('./selectors')
+
 const {
   validate,
   objectValidationRules,
   rulePredicates
 } = require('./validate')
-
-const mergeCovenants = require('./mergeCovenants')
 
 module.exports = {
   createAction,
@@ -55,11 +59,13 @@ module.exports = {
     removeRedispatches,
     remoteRedispatch,
     shiftRedispatchQueue,
-    pushUpRedispatches
+    pushUpRedispatches,
+    selectors
   },
   manifestCovenant,
   rootCovenant,
   rootStateSelectors,
+  cAuthConsumerCovenant,
   mergeCovenants,
   validate,
   objectValidationRules,

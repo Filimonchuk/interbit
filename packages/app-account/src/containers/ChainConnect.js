@@ -1,26 +1,28 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import queryString from 'query-string'
-import {
-  Grid,
-  Row,
-  Col,
-  Button,
-  Table,
-  Form,
-  FormControl
-} from 'react-bootstrap'
+import { Grid, Row, Col } from 'react-bootstrap'
 import { connect } from 'react-redux'
-import { chainDispatch, selectors } from 'interbit-middleware'
-import { IconButton } from 'lib-react-interbit'
+import { chainDispatch, selectors } from 'interbit-ui-tools'
 
 import { actionCreators } from '../interbit/my-account/actions'
+import ConnectFormAddMissingProfileField from '../components/ConnectFormAddMissingProfileField'
+import ConnectFormContinueAuth from '../components/ConnectFormContinueAuth'
+import ConnectFormLoggedOut from '../components/ConnectFormLoggedOut'
+import ConnectFormMissingProfileField from '../components/ConnectFormMissingProfileField'
 import ModalSignIn from '../components/ModalSignIn'
 import ModalSignUp from '../components/ModalSignUp'
 import { toggleModal } from '../redux/uiReducer'
 import modalNames from '../constants/modalNames'
 import { PRIVATE } from '../constants/chainAliases'
-import chairmanmeow from '../assets/chairmanmeow.jpg'
+import connectingHeader from '../assets/connectingHeader.svg'
+
+const MODES = {
+  NOT_LOGGED_IN: 0,
+  PROPS_MISSING: 1,
+  PROPS_ADDING: 2,
+  PROPS_AVAILABLE: 3
+}
 
 const mapStateToProps = (state, ownProps) => {
   const {
@@ -28,22 +30,19 @@ const mapStateToProps = (state, ownProps) => {
   } = ownProps
   const query = queryString.parse(search)
 
-  const chainState = state.interbit.chains
-    ? state.interbit.chains[PRIVATE]
-    : undefined
+  const chainState = selectors.getChain(state, { chainAlias: PRIVATE })
 
   const { chainId, redirectUrl, tokens } = query
   const isSignInModalVisible = state.ui.modals[modalNames.SIGN_IN_MODAL_NAME]
   const isSignUpModalVisible = state.ui.modals[modalNames.SIGN_UP_MODAL_NAME]
 
-  console.log(state)
-
   return {
     profileFields: chainState ? chainState.profile : {},
     redirectUrl,
     consumerChainId: chainId,
-    requestedTokens: tokens,
-    providerChainId: selectors.getChainId(state.interbit, PRIVATE),
+    requestedTokens: Array.isArray(tokens) ? tokens : [tokens],
+    providerChainId: selectors.getChainId(state, { chainAlias: PRIVATE }),
+    mode: MODES.PROPS_AVAILABLE,
     isSignInModalVisible,
     isSignUpModalVisible
   }
@@ -56,12 +55,17 @@ const mapDispatchToProps = dispatch => ({
 
 export class ChainConnect extends Component {
   static propTypes = {
-    profileFields: PropTypes.shape,
+    profileFields: PropTypes.shape({
+      alias: PropTypes.string,
+      email: PropTypes.string,
+      name: PropTypes.string
+    }),
     redirectUrl: PropTypes.string,
     providerChainId: PropTypes.string,
     consumerChainId: PropTypes.string,
     requestedTokens: PropTypes.arrayOf(PropTypes.string),
     blockchainDispatch: PropTypes.func.isRequired,
+    mode: PropTypes.number,
     isSignInModalVisible: PropTypes.bool,
     isSignUpModalVisible: PropTypes.bool,
     toggleModalFunction: PropTypes.func.isRequired
@@ -73,6 +77,7 @@ export class ChainConnect extends Component {
     providerChainId: '',
     consumerChainId: '',
     requestedTokens: [],
+    mode: MODES.NOT_LOGGED_IN,
     isSignInModalVisible: false,
     isSignUpModalVisible: false
   }
@@ -86,12 +91,7 @@ export class ChainConnect extends Component {
       redirectUrl
     } = this.props
 
-    // TODO: Probably dispatch a redux action to UI noting loading of chain situation
-
-    await window.cli.loadChain(consumerChainId)
-
     const shareProfileTokensAction = actionCreators.shareProfileTokens({
-      providerChainId,
       consumerChainId,
       sharedTokens: requestedTokens
     })
@@ -108,12 +108,14 @@ export class ChainConnect extends Component {
 
   render() {
     const {
+      mode,
       consumerChainId,
       requestedTokens,
       profileFields,
       isSignInModalVisible,
       isSignUpModalVisible,
-      toggleModalFunction
+      toggleModalFunction,
+      providerChainId
     } = this.props
 
     const colLayout = {
@@ -121,128 +123,47 @@ export class ChainConnect extends Component {
       mdOffset: 2
     }
 
-    const formLoggedOut = (
-      <div style={{ marginBottom: '100px' }}>
-        <Table className="logged-out">
-          <tbody>
-            {requestedTokens.map(token => (
-              <tr key={token}>
-                <td>{token}</td>
-                <td>Not signed in</td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-        <p>
-          Your (unfilled field name) will be added to your interbit identity and
-          can be used in other apps that require a (unfilled field name).
-        </p>
-        <div className="btn-container">
-          <IconButton
-            text="Create Account"
-            onClick={() => {
-              toggleModalFunction(modalNames.SIGN_UP_MODAL_NAME)
-            }}
-          />
-          <IconButton text="Go Back" className="secondary" />
-        </div>
-        <div className="text-btn-container">
-          <Button
-            className="text-button"
-            onClick={() => {
-              toggleModalFunction(modalNames.SIGN_IN_MODAL_NAME)
-            }}>
-            Have an Account? Sign-in
-          </Button>
-        </div>
-      </div>
-    )
-
-    const formMissingProfileField = (
-      <div style={{ marginBottom: '100px' }}>
-        <Table>
-          <tbody>
-            {Object.keys(profileFields).map(key => (
-              <tr>
-                <td>{key}</td>
-                <td>{profileFields[key]}</td>
-              </tr>
-            ))}
-            <tr>
-              <td colSpan={2}>
-                <Button className="text-button">
-                  Add a (missing token name)
-                </Button>
-              </td>
-            </tr>
-          </tbody>
-        </Table>
-        <IconButton text="Continue" className="disabled" />
-        <IconButton text="Go Back" className="secondary" />
-      </div>
-    )
-
-    const formMissingProfileFieldForm = (
-      <Form style={{ marginBottom: '100px' }}>
-        <Table>
-          <tbody>
-            {Object.keys(profileFields).map(key => (
-              <tr>
-                <td>{key}</td>
-                <td>{profileFields[key]}</td>
-              </tr>
-            ))}
-            <tr>
-              <td colSpan={2} className="form-td">
-                <FormControl
-                  type="text"
-                  placeholder="Add a (missing token name)"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </Table>
-        <p>
-          Your (unfilled field name) will be added to your interbit identity and
-          can be used in other apps that require a (unfilled field name).
-        </p>
-        <IconButton text="Save" />
-        <IconButton text="Cancel" className="secondary" />
-      </Form>
-    )
-
-    const formContinueAuth = (
-      <div>
-        <Table>
-          <tbody>
-            {Object.keys(profileFields).map(key => (
-              <tr>
-                <td>{key}</td>
-                <td>{profileFields[key]}</td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-        <IconButton onClick={this.doConnectChains} text="Continue" />
-        <IconButton text="Go Back" className="secondary" />
-      </div>
-    )
+    const getFormForCurrentMode = () => {
+      switch (mode) {
+        case MODES.NOT_LOGGED_IN:
+          return (
+            <ConnectFormLoggedOut
+              toggleModalFunction={toggleModalFunction}
+              requestedTokens={requestedTokens}
+            />
+          )
+        case MODES.PROPS_MISSING:
+          return (
+            <ConnectFormMissingProfileField profileFields={profileFields} />
+          )
+        case MODES.PROPS_ADDING:
+          return (
+            <ConnectFormAddMissingProfileField profileFields={profileFields} />
+          )
+        case MODES.PROPS_AVAILABLE:
+        default:
+          return (
+            <ConnectFormContinueAuth
+              requestedTokens={requestedTokens}
+              profileFields={profileFields}
+              providerChainId={providerChainId}
+              doConnectChains={this.doConnectChains}
+            />
+          )
+      }
+    }
 
     return (
       <Grid>
         <div className="ibweb-page app-auth">
           <Row>
             <Col {...colLayout}>
-              <img src={chairmanmeow} alt="App info access" />
+              <img src={connectingHeader} alt="App info access" />
               <h3>
                 (Service: {consumerChainId}) wants to access the following
                 identity information:
               </h3>
-              {/* TODO: swap out these forms depending on state */}
-              {formLoggedOut}
-              {formMissingProfileField}
-              {formMissingProfileFieldForm}
-              {formContinueAuth}
+              {getFormForCurrentMode()}
             </Col>
           </Row>
         </div>

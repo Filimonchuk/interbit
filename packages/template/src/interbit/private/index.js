@@ -1,5 +1,11 @@
 // © 2018 BTL GROUP LTD -  This package is licensed under the MIT license https://opensource.org/licenses/MIT
 const Immutable = require('seamless-immutable')
+
+const {
+  cAuthConsumerCovenant,
+  mergeCovenants
+} = require('interbit-covenant-tools')
+
 const { actionTypes, actionCreators } = require('./actions')
 
 const initialState = Immutable.from({
@@ -38,9 +44,11 @@ const reducer = (state = initialState, action) => {
   }
 }
 
-module.exports = {
+const covenant = {
   actionTypes,
   actionCreators,
   initialState,
   reducer
 }
+
+module.exports = mergeCovenants([covenant, cAuthConsumerCovenant])

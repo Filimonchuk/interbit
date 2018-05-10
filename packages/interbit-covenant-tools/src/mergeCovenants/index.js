@@ -2,22 +2,43 @@
 const { fork } = require('redux-saga/effects')
 const Immutable = require('seamless-immutable')
 
+const {
+  validate,
+  objectValidationRules: { object, func }
+} = require('../validate')
+
 module.exports = covenants => {
+  if (!Array.isArray(covenants)) {
+    throw new Error('Expected an array of covenants')
+  }
+  covenants.forEach(covenant =>
+    validate(covenant, {
+      actionTypes: object('Covenant must export actionTypes'),
+      actionCreators: object('Covenant must export actionCreators'),
+      initialState: object('Covenant must export initialState'),
+      reducer: func('Covenant must export a reducer function')
+    })
+  )
+
   const actionCreators = covenants.reduce(
-    (accumActionCreators, covenant) =>
-      Object.assign({}, accumActionCreators, covenant.actionCreators),
+    (accumActionCreators, covenant) => ({
+      ...accumActionCreators,
+      ...covenant.actionCreators
+    }),
     {}
   )
 
   const actionTypes = covenants.reduce(
-    (accumActionTypes, covenant) =>
-      Object.assign({}, accumActionTypes, covenant.actionTypes),
+    (accumActionTypes, covenant) => ({
+      ...accumActionTypes,
+      ...covenant.actionTypes
+    }),
     {}
   )
 
   const initialState = covenants.reduce(
     (initialStateAccum, covenant) =>
-      initialStateAccum.merge(covenant.initialState || {}, { deep: true }),
+      initialStateAccum.merge(covenant.initialState, { deep: true }),
     Immutable.from({})
   )
 

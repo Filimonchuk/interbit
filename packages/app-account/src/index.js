@@ -9,10 +9,10 @@ import createSagaMiddleware from 'redux-saga'
 import {
   createMiddleware as createInterbitMiddleware,
   rootSaga as interbitSaga
-} from 'interbit-middleware'
+} from 'interbit-ui-tools'
 
-import 'lib-react-interbit/src/css/index.css'
-import 'lib-react-interbit/src/css/interbit.css'
+import 'interbit-ui-components/src/css/index.css'
+import 'interbit-ui-components/src/css/interbit.css'
 
 import App from './App'
 

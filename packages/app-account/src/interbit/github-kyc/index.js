@@ -4,11 +4,11 @@ const Immutable = require('seamless-immutable')
 const {
   coreCovenant: {
     redispatch,
-    actionCreators: { startProvideState }
+    actionCreators: { startProvideState },
+    selectors: coreSelectors
   }
 } = require('interbit-covenant-tools')
 
-// const fetch = require('node-fetch')
 const axios = require('axios')
 const { takeEvery, call, put, select } = require('redux-saga').effects
 
@@ -18,6 +18,7 @@ const paths = {
   OAUTH: ['oAuth'],
   TOKEN_URL: ['oAuth', 'tokenUrl'],
   PROFILE_URL: ['oAuth', 'profileUrl'],
+  CALLBACK_URL: ['oAuth', 'callbackUrl'],
   PARAMS: ['oAuth', 'shared', 'params'],
   CLIENT_ID: ['oAuth', 'shared', 'params', 'client_id'],
   CLIENT_SECRET: ['oAuth', 'secret'],
@@ -30,6 +31,7 @@ const selectors = {
   oAuthConfig: state => state.getIn(paths.OAUTH),
   tokenUrl: state => state.getIn(paths.TOKEN_URL),
   profileUrl: state => state.getIn(paths.PROFILE_URL),
+  callbackUrl: state => state.getIn(paths.CALLBACK_URL),
   clientId: state => state.getIn(paths.CLIENT_ID),
   clientSecret: state => state.getIn(paths.CLIENT_SECRET),
   params: state => state.getIn(paths.PARAMS),
@@ -59,7 +61,8 @@ const initialState = Immutable.from({
     // These parameters are internal to the covenant and are not shared
     client_secret: process.env.GITHUB_CLIENT_SECRET,
     tokenUrl: 'https://github.com/login/oauth/access_token',
-    profileUrl: 'https://api.github.com/user'
+    profileUrl: 'https://api.github.com/user',
+    callbackUrl: process.env.OAUTH_CALLBACK_URL
   },
   profiles: {},
   authenticationRequests: {}
@@ -113,7 +116,9 @@ const reducer = (state = initialState, action) => {
         requestId,
         consumerChainId,
         joinName,
-        temporaryToken
+        temporaryToken,
+        error,
+        errorDescription
       } = action.payload
 
       if (
@@ -134,8 +139,13 @@ const reducer = (state = initialState, action) => {
         requestId,
         consumerChainId,
         joinName,
-        temporaryToken
+        temporaryToken,
+        error,
+        errorDescription
       })
+
+      // HACK: Same permissions as the current action
+      sagaAction.publicKey = action.publicKey
 
       console.log('REDISPATCH: ', sagaAction)
       nextState = redispatch(nextState, sagaAction)
@@ -159,6 +169,9 @@ const reducer = (state = initialState, action) => {
         statePath: ['profiles', consumerChainId, 'sharedProfile'],
         joinName
       })
+
+      // HACK: Same permissions as the current action
+      provideAction.publicKey = action.publicKey
 
       console.log('REDISPATCH: ', provideAction)
       nextState = redispatch(nextState, provideAction)
@@ -246,10 +259,18 @@ function* oAuthCallbackSaga(action, fetchApi = axios) {
     requestId,
     consumerChainId,
     joinName,
-    temporaryToken
+    temporaryToken,
+    error,
+    errorDescription
   } = action.payload
 
   try {
+    if (error) {
+      console.log(`Authentication failed: ${error} ${errorDescription}`)
+      throw new Error(errorDescription || error)
+    }
+
+    const providerChainId = yield select(coreSelectors.chainId)
     const oAuthConfig = yield select(selectors.oAuthConfig)
     const {
       tokenUrl,
@@ -284,10 +305,23 @@ function* oAuthCallbackSaga(action, fetchApi = axios) {
     // Make the github profile sharable to complete the cAuth loop
     yield put(actionCreators.shareProfile({ consumerChainId, joinName }))
     yield put(actionCreators.updateProfile({ consumerChainId, profile }))
-    yield put(actionCreators.authSuceeded({ requestId }))
-  } catch (error) {
+    yield put(
+      actionCreators.authSuceeded({
+        requestId,
+        consumerChainId,
+        providerChainId,
+        joinName
+      })
+    )
+  } catch (e) {
     // Remove the request and shared data
-    yield put(actionCreators.authFailed({ requestId, consumerChainId, error }))
+    yield put(
+      actionCreators.authFailed({
+        requestId,
+        consumerChainId,
+        error: e.message
+      })
+    )
   }
 }
 
@@ -301,15 +335,19 @@ function* fetchAuthToken(
     code: temporaryToken,
     state: requestId
   }
-  console.log('POST: ', tokenUrl)
-  const getTokenQuery = yield call(fetchApi.post, tokenUrl, {
-    params,
-    data: {},
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json'
+  console.log('POST: ', tokenUrl, params)
+  const getTokenQuery = yield call(
+    fetchApi.post,
+    tokenUrl,
+    {},
+    {
+      params,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      }
     }
-  })
+  )
   const getTokenResult = getTokenQuery.data
   console.log(getTokenResult)
 
@@ -372,6 +410,7 @@ module.exports = {
   actionCreators,
   reducer,
   rootSaga,
+  selectors,
   // These are only exposed for testing
   initialState,
   oAuthCallbackSaga
